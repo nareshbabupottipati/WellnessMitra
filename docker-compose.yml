@@ -1,0 +1,90 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — WellnessMitra Local Development
+# Runs backend + frontend together with hot-reload
+# Usage: docker compose up --build
+# ──────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ── Backend (FastAPI) ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: wellnessmitra-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:////app/data/fitness_agent.db
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+    volumes:
+      - ./backend:/app/backend:ro          # Source (read-only in prod)
+      - app_data:/app/data                  # DB persistence
+      - chroma_data:/app/chroma_db          # Vector DB persistence
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - wellnessmitra-net
+
+  # ── Frontend (React Dev Server) ──────────────────────────────────────────────
+  frontend:
+    image: node:18-alpine
+    container_name: wellnessmitra-frontend
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true           # Required for hot-reload in Docker
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules                   # Prevent host node_modules override
+    command: sh -c "npm install --legacy-peer-deps && npm start"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - wellnessmitra-net
+
+  # ── RAG Ingestion (one-shot job) ─────────────────────────────────────────────
+  rag-ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: wellnessmitra-rag-ingest
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:////app/data/fitness_agent.db
+    volumes:
+      - ./backend:/app/backend:ro
+      - chroma_data:/app/chroma_db
+    command: python -m backend.rag.ingestion
+    profiles:
+      - ingest                              # Only runs with: docker compose --profile ingest up
+    networks:
+      - wellnessmitra-net
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  app_data:
+    driver: local
+  chroma_data:
+    driver: local
+
+# ── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  wellnessmitra-net:
+    driver: bridge

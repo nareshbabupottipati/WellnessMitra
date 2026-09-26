@@ -1,0 +1,55 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Nightly RAG Re-ingestion — WellnessMitra
+# Rebuilds the ChromaDB vector store nightly (or manually)
+# Useful when knowledge_docs are updated
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: 🔄 Nightly RAG Re-ingestion
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # Daily at 01:00 UTC (06:30 IST)
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  rag-ingest:
+    name: 📚 Re-ingest Knowledge Documents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: 🗃️ Run RAG ingestion
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          DATABASE_URL: sqlite:///./fitness_agent.db
+        run: |
+          python -m backend.rag.ingestion
+          echo "✅ RAG ingestion complete"
+
+      - name: 📤 Upload ChromaDB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chroma-db-${{ github.run_id }}
+          path: chroma_db/
+          retention-days: 3
+
+      - name: 📋 Summary
+        run: |
+          echo "### 📚 RAG Re-ingestion Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Ran at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "**Knowledge docs processed:**" >> $GITHUB_STEP_SUMMARY
+          ls backend/rag/knowledge_docs/ | while read f; do echo "- $f" >> $GITHUB_STEP_SUMMARY; done

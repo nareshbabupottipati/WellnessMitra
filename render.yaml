@@ -1,0 +1,32 @@
+# render.yaml — WellnessMitra Render Blueprint
+# Deploy this repo to Render with one click
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  - type: web
+    name: wellnessmitra-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free                         # free | starter | standard
+    region: oregon                     # oregon | frankfurt | singapore | ohio
+
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false                    # Must be set manually in Render dashboard
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: EDAMAM_APP_ID
+        sync: false
+      - key: EDAMAM_APP_KEY
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./fitness_agent.db
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://nareshbabupottipati.github.io
+
+    healthCheckPath: /health
+
+    autoDeploy: true                   # Auto-deploy on git push
