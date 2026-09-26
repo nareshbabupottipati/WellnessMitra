@@ -1,8 +1,5 @@
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
+from backend.config import generate_content_safe
 from backend.rag.retriever import retrieve_context
-
-genai.configure(api_key=GOOGLE_API_KEY)
 
 WORKOUT_SYSTEM_PROMPT = """
 You are an expert personal fitness trainer and certified strength & conditioning coach.
@@ -54,12 +51,11 @@ def workout_agent_node(state: dict) -> dict:
         rag_context=rag_context or "No additional context available."
     )
 
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    response = model.generate_content(prompt)
+    response_text = generate_content_safe(prompt)
 
     return {
         **state,
-        "workout_plan": response.text,
-        "response": response.text,
+        "workout_plan": response_text,
+        "response": response_text,
         "rag_context": rag_context
     }

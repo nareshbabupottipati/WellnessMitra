@@ -34,14 +34,17 @@ export default function ChatInterface({ userId }) {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
+    const activeUserId = userId || localStorage.getItem('wm_user_id') || 'usr_demo123';
     try {
-      const data = await sendChatMessage(userId, msg, chatHistory);
+      const data = await sendChatMessage(activeUserId, msg, chatHistory);
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       setChatHistory(data.chat_history || []);
-    } catch {
+    } catch (err) {
+      console.error('FitBot error:', err);
+      const detail = err?.response?.data?.detail || err?.message || 'Please check your connection and try again.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Could not connect to FitBot. Please check your connection and try again.',
+        content: `⚠️ Could not connect to FitBot (${detail}). Please check your connection and try again.`,
       }]);
     } finally {
       setLoading(false);

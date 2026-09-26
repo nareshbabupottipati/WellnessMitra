@@ -1,7 +1,4 @@
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
-
-genai.configure(api_key=GOOGLE_API_KEY)
+from backend.config import generate_content_safe
 
 PROGRESS_PROMPT = """
 You are a supportive and data-driven fitness coach reviewing a user's progress.
@@ -55,7 +52,6 @@ def progress_agent_node(state: dict) -> dict:
         streak=progress_data.get("streak", 0)
     )
 
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    response = model.generate_content(prompt)
+    response_text = generate_content_safe(prompt)
 
-    return {**state, "progress_summary": progress_data, "response": response.text}
+    return {**state, "progress_summary": progress_data, "response": response_text}

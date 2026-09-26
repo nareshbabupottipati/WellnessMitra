@@ -62,10 +62,34 @@ export default function OnboardingPage() {
     }
   };
 
+  const loginAsDemo = () => {
+    localStorage.setItem('wm_user_id', 'usr_demo123');
+    localStorage.setItem('wm_user_name', 'Rahul Sharma');
+    navigate('/dashboard');
+  };
+
   return (
     <div className="onboarding-page">
       <div className="onboarding-card">
-        <div className="onboarding-brand">🏋️ WellnessMitra</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="onboarding-brand" style={{ margin: 0 }}>🏋️ WellnessMitra</div>
+          <button
+            type="button"
+            onClick={loginAsDemo}
+            style={{
+              padding: '6px 14px',
+              fontSize: '12px',
+              borderRadius: '20px',
+              background: '#2563eb',
+              color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            ⚡ Quick Demo Login
+          </button>
+        </div>
         <div className="step-indicator">
           {STEPS.map((s, i) => (
             <div key={i} className={`step-dot ${i === step ? 'active' : i < step ? 'done' : ''}`}>

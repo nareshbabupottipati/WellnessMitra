@@ -1,8 +1,6 @@
 import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
+from backend.config import GOOGLE_API_KEY, GEMINI_MODEL, FALLBACK_MODELS
 from backend.rag.retriever import retrieve_context
-
-genai.configure(api_key=GOOGLE_API_KEY)
 
 FITBOT_SYSTEM_PROMPT = """
 You are FitBot, a friendly, knowledgeable, and empathetic AI fitness & wellness coach for WellnessMitra.
@@ -52,11 +50,6 @@ def assistant_agent_node(state: dict) -> dict:
         rag_context=rag_context or "No specific knowledge retrieved."
     )
 
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash-exp",
-        system_instruction=system_instruction
-    )
-
     # Build history in Gemini format
     history = [
         {"role": msg["role"], "parts": [msg["content"]]}
@@ -64,17 +57,37 @@ def assistant_agent_node(state: dict) -> dict:
         if msg.get("role") in {"user", "model"}
     ]
 
-    chat = model.start_chat(history=history)
-    response = chat.send_message(user_message)
+    models_to_try = [GEMINI_MODEL] + [m for m in FALLBACK_MODELS if m != GEMINI_MODEL]
+    response_text = ""
+    last_err = None
+    for m_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(
+                model_name=m_name,
+                system_instruction=system_instruction
+            )
+            chat = model.start_chat(history=history)
+            response = chat.send_message(user_message)
+            if response and response.text:
+                response_text = response.text
+                break
+        except Exception as e:
+            last_err = e
+            continue
+
+    if not response_text:
+        if last_err:
+            raise last_err
+        response_text = "I'm here to help you with your fitness journey! How can I support you right now?"
 
     updated_history = chat_history + [
         {"role": "user",  "content": user_message},
-        {"role": "model", "content": response.text}
+        {"role": "model", "content": response_text}
     ]
 
     return {
         **state,
         "chat_history": updated_history,
-        "response": response.text,
+        "response": response_text,
         "rag_context": rag_context
     }

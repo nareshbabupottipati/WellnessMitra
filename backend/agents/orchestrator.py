@@ -5,10 +5,7 @@ from backend.agents.nutrition_agent import nutrition_agent_node
 from backend.agents.location_agent import location_agent_node
 from backend.agents.progress_agent import progress_agent_node
 from backend.agents.assistant_agent import assistant_agent_node
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
-
-genai.configure(api_key=GOOGLE_API_KEY)
+from backend.config import generate_content_safe
 
 INTENT_PROMPT = """
 Classify this user message into ONE of these intents:
@@ -24,16 +21,34 @@ Respond with ONLY the intent word (lowercase). No explanation.
 """
 
 
+def classify_intent_fast(message: str) -> str:
+    msg = message.lower()
+    if any(k in msg for k in ["gym", "gyms", "fitness center", "find gym", "locate gym"]):
+        return "gym_finder"
+    if any(k in msg for k in ["workout", "routine", "exercise", "training plan", "sets", "reps", "muscle gain plan", "leg day"]):
+        return "workout"
+    if any(k in msg for k in ["meal", "diet", "nutrition", "calorie", "protein", "carbs", "food plan", "macros"]):
+        return "nutrition"
+    if any(k in msg for k in ["progress", "weight log", "summary", "stats", "streak"]):
+        return "progress"
+    return ""
+
+
 def intent_classifier_node(state: FitnessAgentState) -> FitnessAgentState:
     """Classify user intent and route to the correct sub-agent."""
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    prompt = INTENT_PROMPT.format(message=state["user_message"])
-    response = model.generate_content(prompt)
-    intent = response.text.strip().lower()
-    # Fallback to general if unknown intent
-    if intent not in {"workout", "nutrition", "gym_finder", "progress", "general"}:
-        intent = "general"
-    return {**state, "intent": intent}
+    fast = classify_intent_fast(state["user_message"])
+    if fast:
+        return {**state, "intent": fast}
+
+    try:
+        prompt = INTENT_PROMPT.format(message=state["user_message"])
+        text = generate_content_safe(prompt)
+        intent = text.strip().lower()
+        if intent not in {"workout", "nutrition", "gym_finder", "progress", "general"}:
+            intent = "general"
+        return {**state, "intent": intent}
+    except Exception:
+        return {**state, "intent": "general"}
 
 
 def route_to_agent(state: FitnessAgentState) -> str:

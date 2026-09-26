@@ -21,7 +21,11 @@ export const updateUserProfile = (userId, updates) =>
 // ── Chat API ──────────────────────────────────────────────────────────────────
 
 export const sendChatMessage = (userId, message, chatHistory = []) =>
-  api.post('/chat/', { user_id: userId, message, chat_history: chatHistory }).then(r => r.data);
+  api.post('/chat/', {
+    user_id: (userId && String(userId).trim()) || 'usr_demo123',
+    message,
+    chat_history: chatHistory || []
+  }).then(r => r.data);
 
 // ── Workout API ────────────────────────────────────────────────────────────────
 

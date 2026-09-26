@@ -1,9 +1,6 @@
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
+from backend.config import generate_content_safe
 from backend.rag.retriever import retrieve_context
 from backend.database.crud import search_foods, get_all_foods, get_food
-
-genai.configure(api_key=GOOGLE_API_KEY)
 
 
 def calculate_daily_calories(weight_kg, height_cm, age, gender, activity_level, goal):
@@ -110,12 +107,11 @@ def nutrition_agent_node(state: dict) -> dict:
         rag_context=rag_context or "No additional context available."
     )
 
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    response = model.generate_content(prompt)
+    response_text = generate_content_safe(prompt)
 
     return {
         **state,
-        "meal_plan": response.text,
-        "response": response.text,
+        "meal_plan": response_text,
+        "response": response_text,
         "rag_context": rag_context
     }
