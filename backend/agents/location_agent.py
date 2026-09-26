@@ -1,72 +1,116 @@
+"""Nearby gyms via the Photon geocoder (OpenStreetMap). No API key."""
+import math
+import re
 import requests
-from backend.config import GOOGLE_MAPS_API_KEY
+
+HEADERS = {"User-Agent": "WellnessMitraPOC/1.0 (local fitness demo)"}
+PHOTON = "https://photon.komoot.io/api/"
+ALLOWED_TYPES = {"fitness_centre", "fitness_center", "gym", "fitness_station", "sports_centre"}
+GENERIC_NAMES = {"gym", "gyms", "fitness", "fitness centre", "fitness center", "unnamed gym"}
+_cache = {}
 
 
-def geocode_location(location: str) -> str:
-    """Convert city name to lat,lng string."""
-    url = "https://maps.googleapis.com/maps/api/geocode/json"
-    resp = requests.get(url, params={"address": location, "key": GOOGLE_MAPS_API_KEY}, timeout=10)
-    data = resp.json()
-    if data.get("results"):
-        loc = data["results"][0]["geometry"]["location"]
-        return f"{loc['lat']},{loc['lng']}"
-    return location
+def _km(lat1, lon1, lat2, lon2) -> float:
+    radius = 6371
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlon / 2) ** 2
+    return 2 * radius * math.asin(math.sqrt(a))
 
 
-def find_nearby_gyms(location: str, radius_meters: int = 5000) -> list:
-    """Find gyms near a location using Google Places API."""
-    # Geocode if not already lat,lng
-    parts = location.replace(" ", "").split(",")
-    if len(parts) != 2 or not all(p.replace(".", "").replace("-", "").isdigit() for p in parts):
-        location = geocode_location(location)
+def geocode_location(location: str):
+    response = requests.get(
+        PHOTON,
+        params={"q": location, "limit": 1},
+        headers=HEADERS,
+        timeout=12,
+    )
+    response.raise_for_status()
+    features = response.json().get("features") or []
+    if not features:
+        return None
+    lon, lat = features[0]["geometry"]["coordinates"]
+    return float(lat), float(lon)
 
-    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-    params = {
-        "location": location,
-        "radius": radius_meters,
-        "type": "gym",
-        "key": GOOGLE_MAPS_API_KEY
-    }
-    resp = requests.get(url, params=params, timeout=10)
-    data = resp.json()
 
+def _search(query: str, lat: float, lon: float) -> list:
+    response = requests.get(
+        PHOTON,
+        params={"q": query, "lat": lat, "lon": lon, "limit": 40, "lang": "en"},
+        headers=HEADERS,
+        timeout=12,
+    )
+    response.raise_for_status()
     gyms = []
-    for place in data.get("results", [])[:6]:
+    for feature in response.json().get("features") or []:
+        props = feature.get("properties") or {}
+        name = (props.get("name") or "").strip()
+        kind = (props.get("osm_value") or "").lower()
+        if not name or kind not in ALLOWED_TYPES:
+            continue
+        point = feature.get("geometry", {}).get("coordinates") or []
+        if len(point) < 2:
+            continue
+        gym_lon, gym_lat = float(point[0]), float(point[1])
+        distance = _km(lat, lon, gym_lat, gym_lon)
+        if distance > 18:
+            continue
+        street = props.get("street")
+        city = props.get("city") or props.get("district") or props.get("locality")
+        address = ", ".join(part for part in (street, city) if part) or "Nearby"
         gyms.append({
-            "name":     place.get("name"),
-            "address":  place.get("vicinity"),
-            "rating":   place.get("rating", "N/A"),
-            "open_now": place.get("opening_hours", {}).get("open_now"),
-            "place_id": place.get("place_id"),
-            "maps_url": f"https://www.google.com/maps/place/?q=place_id:{place.get('place_id')}"
+            "name": name,
+            "address": address,
+            "distance_km": round(distance, 1),
+            "maps_url": f"https://www.openstreetmap.org/?mlat={gym_lat}&mlon={gym_lon}#map=16/{gym_lat}/{gym_lon}",
         })
     return gyms
+
+
+def find_nearby_gyms(location: str, radius_meters: int = 18000) -> list:
+    key = location.strip().lower()
+    if key in _cache:
+        return _cache[key]
+    coords = geocode_location(location)
+    if not coords:
+        return []
+    lat, lon = coords
+    merged = _search("fitness", lat, lon) + _search("gym", lat, lon)
+    unique = []
+    seen = set()
+    for gym in sorted(merged, key=lambda item: item["distance_km"]):
+        name_key = re.sub(r"[^a-z0-9]", "", gym["name"].lower())
+        if name_key in seen:
+            continue
+        seen.add(name_key)
+        unique.append(gym)
+    named = [gym for gym in unique if gym["name"].strip().lower() not in GENERIC_NAMES]
+    chosen = (named or unique)[:12]
+    _cache[key] = chosen
+    return chosen
 
 
 def location_agent_node(state: dict) -> dict:
     profile = state["user_profile"]
     location = profile.get("location", "Hyderabad, India")
-
     try:
         gyms = find_nearby_gyms(location)
-    except Exception as e:
-        return {**state, "nearby_gyms": [], "response": f"Could not fetch gyms: {e}"}
+    except Exception as exc:
+        return {**state, "nearby_gyms": [], "response": f"Could not fetch gyms: {exc}"}
 
     if not gyms:
         return {
             **state,
             "nearby_gyms": [],
-            "response": f"No gyms found near **{location}**. Try a different location."
+            "response": f"No named gyms found near **{location}**. Try a more specific area.",
         }
 
-    lines = [f"Here are the top gyms near **{location}**:\n"]
-    for i, g in enumerate(gyms, 1):
-        status = "🟢 Open Now" if g["open_now"] else ("🔴 Closed" if g["open_now"] is False else "⏱ Hours Unknown")
+    lines = [f"Here are **{len(gyms)}** gyms near **{location}**:\n"]
+    for index, gym in enumerate(gyms, 1):
         lines.append(
-            f"**{i}. {g['name']}**\n"
-            f"   📍 {g['address']}\n"
-            f"   ⭐ Rating: {g['rating']}  |  {status}\n"
-            f"   🗺 [Open in Google Maps]({g['maps_url']})\n"
+            f"**{index}. {gym['name']}** · {gym['distance_km']} km\n"
+            f"   📍 {gym['address']}\n"
+            f"   🗺 [Open in OpenStreetMap]({gym['maps_url']})\n"
         )
-
     return {**state, "nearby_gyms": gyms, "response": "\n".join(lines)}

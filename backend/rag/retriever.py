@@ -1,50 +1,42 @@
-import chromadb
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from backend.config import GOOGLE_API_KEY
+"""Keyword search over local knowledge text. No vector database."""
+import re
+from pathlib import Path
 
-CHROMA_PATH = "./chroma_db"
-_client = None
+DOCS = Path(__file__).parent / "knowledge_docs"
+COLLECTION_FILES = {
+    "fitness": ["fitness_exercises.txt"],
+    "nutrition": ["nutrition_guidelines.txt"],
+    "general": ["wellness_tips.txt", "fitness_exercises.txt", "nutrition_guidelines.txt"],
+}
 
 
-def get_chroma_client():
-    global _client
-    if _client is None:
-        _client = chromadb.PersistentClient(path=CHROMA_PATH)
-    return _client
+def _chunks(collection: str) -> list[str]:
+    names = COLLECTION_FILES.get(collection, COLLECTION_FILES["general"])
+    chunks = []
+    for name in names:
+        path = DOCS / name
+        if not path.exists():
+            continue
+        parts = re.split(r"\n(?=### )", path.read_text(encoding="utf-8"))
+        for part in parts:
+            text = part.strip()
+            if len(text) > 40:
+                chunks.append(text)
+    return chunks
 
 
 def retrieve_context(query: str, collection: str = "general", top_k: int = 3) -> str:
-    """
-    Retrieve the most relevant knowledge chunks for a given query.
-
-    Args:
-        query: User query or agent prompt
-        collection: ChromaDB collection name (fitness | nutrition | general)
-        top_k: Number of chunks to retrieve
-
-    Returns:
-        Concatenated relevant text chunks
-    """
-    try:
-        client = get_chroma_client()
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=GOOGLE_API_KEY
-        )
-        col = client.get_or_create_collection(collection)
-
-        # Check if collection has any documents
-        if col.count() == 0:
-            return ""
-
-        query_embedding = embeddings.embed_query(query)
-        results = col.query(
-            query_embeddings=[query_embedding],
-            n_results=min(top_k, col.count())
-        )
-
-        if results.get("documents") and results["documents"][0]:
-            return "\n\n---\n\n".join(results["documents"][0])
-        return ""
-    except Exception:
-        return ""
+    words = {word for word in re.findall(r"[a-z0-9]+", query.lower()) if len(word) > 2}
+    scored = []
+    for chunk in _chunks(collection):
+        haystack = chunk.lower()
+        score = sum(1 for word in words if word in haystack)
+        if score:
+            scored.append((score, chunk))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    if not scored:
+        picked = _chunks(collection)[:1]
+    else:
+        picked = [chunk for _, chunk in scored[:top_k]]
+    clipped = [chunk[:350].strip() for chunk in picked]
+    return "\n\n".join(clipped)

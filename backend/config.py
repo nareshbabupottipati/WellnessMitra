@@ -1,12 +1,18 @@
-from dotenv import load_dotenv
+from pathlib import Path
 import os
 
-load_dotenv()
+from dotenv import load_dotenv
 
-GOOGLE_API_KEY     = os.getenv("GOOGLE_API_KEY")
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
-EDAMAM_APP_ID      = os.getenv("EDAMAM_APP_ID")
-EDAMAM_APP_KEY     = os.getenv("EDAMAM_APP_KEY")
-DATABASE_URL       = os.getenv("DATABASE_URL", "sqlite:///./fitness_agent.db")
-APP_ENV            = os.getenv("APP_ENV", "development")
-CORS_ORIGINS       = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+APP_ENV = os.getenv("APP_ENV", "development")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+_PLACEHOLDERS = {"", "your_gemini_api_key_here", "your_api_key_here"}
+
+
+def gemini_configured() -> bool:
+    return GOOGLE_API_KEY not in _PLACEHOLDERS

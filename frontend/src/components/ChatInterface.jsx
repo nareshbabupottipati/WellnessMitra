@@ -38,11 +38,16 @@ export default function ChatInterface({ userId }) {
       const data = await sendChatMessage(userId, msg, chatHistory);
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       setChatHistory(data.chat_history || []);
-    } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: '⚠️ Could not connect to FitBot. Please check your connection and try again.',
-      }]);
+    } catch (error) {
+      const status = error.response?.status;
+      const detail = error.response?.data?.detail;
+      let content = '⚠️ Could not connect to FitBot. Please check your connection and try again.';
+      if (status === 404) {
+        content = '⚠️ This profile is no longer saved. Return to the start and create it again.';
+      } else if (typeof detail === 'string') {
+        content = `⚠️ ${detail}`;
+      }
+      setMessages(prev => [...prev, { role: 'assistant', content }]);
     } finally {
       setLoading(false);
     }

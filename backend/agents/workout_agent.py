@@ -1,11 +1,8 @@
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
+from backend.llm import generate_text
 from backend.rag.retriever import retrieve_context
 
-genai.configure(api_key=GOOGLE_API_KEY)
-
 WORKOUT_SYSTEM_PROMPT = """
-You are an expert personal fitness trainer and certified strength & conditioning coach.
+You are an expert personal fitness trainer.
 
 User Profile:
 - Name: {name}
@@ -14,32 +11,22 @@ User Profile:
 - Fitness Goal: {fitness_goal}
 - Activity Level: {activity_level}
 - Days Available Per Week: {days}
-- Equipment: {equipment}
 - Medical Notes: {medical_notes}
 
 Fitness Knowledge Base:
 {rag_context}
 
-Create a detailed, safe, and progressive weekly workout plan. For each exercise include:
-1. Exercise name and target muscles
-2. Sets x Reps (or duration)
-3. Rest period
-4. Form tips
-5. Beginner modifications if needed
-
-Also include warm-up (5 min) and cool-down (5 min) routines.
-Format the plan day by day in a clear, readable structure.
+Create a safe weekly workout plan. For each exercise include sets, reps, rest, and a form tip.
+Include a short warm-up and cool-down. Format the plan day by day.
 """
 
 
 def workout_agent_node(state: dict) -> dict:
     profile = state["user_profile"]
-
     rag_context = retrieve_context(
-        query=f"workout plan {profile.get('fitness_goal')} {profile.get('activity_level')}",
-        collection="fitness"
+        query=f"workout plan {profile.get('fitness_goal')} {state.get('user_message', '')}",
+        collection="fitness",
     )
-
     prompt = WORKOUT_SYSTEM_PROMPT.format(
         name=profile.get("name", "User"),
         age=profile.get("age", "N/A"),
@@ -49,17 +36,17 @@ def workout_agent_node(state: dict) -> dict:
         fitness_goal=profile.get("fitness_goal", "general fitness"),
         activity_level=profile.get("activity_level", "moderate"),
         days=profile.get("days_per_week", 3),
-        equipment=state.get("user_message", "not specified"),
         medical_notes=profile.get("medical_notes", "none"),
-        rag_context=rag_context or "No additional context available."
+        rag_context=rag_context or "No additional context available.",
     )
-
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    response = model.generate_content(prompt)
-
-    return {
-        **state,
-        "workout_plan": response.text,
-        "response": response.text,
-        "rag_context": rag_context
-    }
+    try:
+        text = generate_text(prompt)
+    except Exception as exc:
+        text = f"Gemini request failed: {exc}"
+    if not text:
+        text = (
+            "Gemini is not configured, so this is a local starter plan from the knowledge notes.\n\n"
+            f"{rag_context}\n\n"
+            "Add `GOOGLE_API_KEY` to `.env` for a full personalized plan."
+        )
+    return {**state, "workout_plan": text, "response": text, "rag_context": rag_context}

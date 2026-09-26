@@ -15,6 +15,12 @@ export const onboardUser = (userData) =>
 export const getUserProfile = (userId) =>
   api.get(`/users/${userId}/profile`).then(r => r.data);
 
+export const getNearbyGyms = (userId) =>
+  api.get(`/users/${userId}/gyms`).then(r => r.data);
+
+export const getMealPlan = (userId) =>
+  api.get(`/users/${userId}/meal-plan`).then(r => r.data);
+
 export const updateUserProfile = (userId, updates) =>
   api.put(`/users/${userId}/profile`, updates).then(r => r.data);
 

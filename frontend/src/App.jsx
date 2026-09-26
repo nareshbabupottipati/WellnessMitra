@@ -16,6 +16,10 @@ export default function App() {
         <Route path="/"          element={<OnboardingPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/chat"      element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/workouts"  element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/nutrition" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/gyms"      element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/progress"  element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

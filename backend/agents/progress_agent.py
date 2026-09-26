@@ -1,61 +1,68 @@
-import google.generativeai as genai
-from backend.config import GOOGLE_API_KEY
-
-genai.configure(api_key=GOOGLE_API_KEY)
+from backend.llm import generate_text
+from backend.store import get_weight_logs, get_workout_logs
 
 PROGRESS_PROMPT = """
-You are a supportive and data-driven fitness coach reviewing a user's progress.
+You are a supportive fitness coach reviewing a user's logged progress.
 
 User Goal: {goal}
-30-Day Progress Summary:
-- Total Workouts Completed: {workouts}
-- Total Calories Burned (workouts): {calories_burned} kcal
+Progress Summary:
+- Total Workouts: {workouts}
+- Total Calories Burned: {calories_burned} kcal
 - Weight Change: {weight_change} kg ({direction})
 - Current Weight: {current_weight} kg
 - Current BMI: {bmi}
-- Workout Streak: {streak} days
 
-Provide:
-1. 🎯 A motivating personalized progress summary (2-3 sentences)
-2. 🏆 Key achievements this month
-3. 📈 Top 2 areas of improvement needed
-4. 💡 Specific recommendations for the next 30 days
-5. 🌟 An encouraging closing message
-
-Keep the tone warm, specific, and action-oriented.
+Write a short motivating summary, two improvements, and one next step.
 """
+
+
+def _summary(state: dict) -> dict:
+    profile = state["user_profile"]
+    user_id = state["user_id"]
+    workouts = get_workout_logs(user_id, 30)
+    weights = get_weight_logs(user_id, 30)
+    calories = sum(log.calories_burned or 0 for log in workouts)
+    start = weights[0].weight_kg if weights else profile.get("weight_kg")
+    current = weights[-1].weight_kg if weights else profile.get("weight_kg")
+    change = round((current or 0) - (start or 0), 2) if start is not None and current is not None else 0
+    return {
+        "total_workouts": len(workouts),
+        "total_calories_burned": round(calories),
+        "weight_change": change,
+        "current_weight": current,
+        "weight_start": start,
+    }
 
 
 def progress_agent_node(state: dict) -> dict:
     profile = state["user_profile"]
-
-    # In a real app, fetch from DB. Using mock data for demo.
-    progress_data = state.get("progress_summary") or {
-        "total_workouts": 12,
-        "total_calories_burned": 3600,
-        "weight_change": -2.3,
-        "current_weight": profile.get("weight_kg", 70),
-        "streak": 5
-    }
-
-    weight_change = progress_data.get("weight_change", 0)
+    progress = _summary(state)
+    weight_change = progress["weight_change"]
     direction = "lost" if weight_change < 0 else "gained"
-    weight_kg = progress_data.get("current_weight", 70)
-    height_m = float(profile.get("height_cm", 170)) / 100
-    bmi = round(weight_kg / (height_m ** 2), 1) if height_m > 0 else "N/A"
-
+    height_m = float(profile.get("height_cm") or 170) / 100
+    current = progress["current_weight"] or 0
+    bmi = round(current / (height_m ** 2), 1) if height_m and current else "N/A"
+    local = (
+        f"Logged progress (last 30 days):\n"
+        f"- Workouts: **{progress['total_workouts']}**\n"
+        f"- Calories burned: **{progress['total_calories_burned']}**\n"
+        f"- Weight: **{progress['weight_start']} kg** → **{progress['current_weight']} kg** "
+        f"({abs(weight_change)} kg {direction})\n"
+        f"- BMI: **{bmi}**"
+    )
     prompt = PROGRESS_PROMPT.format(
         goal=profile.get("fitness_goal", "general fitness"),
-        workouts=progress_data.get("total_workouts", 0),
-        calories_burned=progress_data.get("total_calories_burned", 0),
+        workouts=progress["total_workouts"],
+        calories_burned=progress["total_calories_burned"],
         weight_change=abs(weight_change),
         direction=direction,
-        current_weight=weight_kg,
+        current_weight=current,
         bmi=bmi,
-        streak=progress_data.get("streak", 0)
     )
-
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    response = model.generate_content(prompt)
-
-    return {**state, "progress_summary": progress_data, "response": response.text}
+    try:
+        text = generate_text(prompt)
+    except Exception as exc:
+        text = f"{local}\n\nGemini request failed: {exc}"
+    if not text:
+        text = local + "\n\nAdd `GOOGLE_API_KEY` to `.env` for a coached write-up."
+    return {**state, "progress_summary": progress, "response": text}

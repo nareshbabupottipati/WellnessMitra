@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { onboardUser } from '../services/api';
 import './OnboardingPage.css';
 
@@ -24,6 +24,7 @@ const DIETS = ['none', 'vegetarian', 'vegan', 'keto', 'paleo'];
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -66,6 +67,9 @@ export default function OnboardingPage() {
     <div className="onboarding-page">
       <div className="onboarding-card">
         <div className="onboarding-brand">🏋️ WellnessMitra</div>
+        {searchParams.get('reset') && (
+          <div className="error-msg">Your saved profile was cleared when the demo moved to JSON storage. Create it again to use FitBot.</div>
+        )}
         <div className="step-indicator">
           {STEPS.map((s, i) => (
             <div key={i} className={`step-dot ${i === step ? 'active' : i < step ? 'done' : ''}`}>
