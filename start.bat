@@ -6,6 +6,7 @@
 :: ============================================================
 
 title WellnessMitra — Starting...
+set PATH=C:\Program Files\nodejs;%PATH%
 
 echo.
 echo  ========================================================
@@ -40,7 +41,7 @@ timeout /t 10 /nobreak >nul
 
 :: ── Start Frontend in new window ─────────────────────────────────────────────
 echo  Starting Frontend (React)...
-start "WellnessMitra Frontend" cmd /k "cd /d "%~dp0\frontend" && echo Frontend starting on http://localhost:3000 && npm start"
+start "WellnessMitra Frontend" cmd /k "set PATH=C:\Program Files\nodejs;%%PATH%% && cd /d "%~dp0\frontend" && echo Frontend starting on http://localhost:3000 && npm start"
 
 :: ── Wait for frontend to start ────────────────────────────────────────────────
 echo  Waiting for frontend to compile (15 seconds)...

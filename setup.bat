@@ -6,6 +6,7 @@
 :: ============================================================
 
 title WellnessMitra — Setup
+set PATH=C:\Program Files\nodejs;%PATH%
 
 echo.
 echo  ██╗    ██╗███████╗██╗     ██╗     ███╗   ██╗███████╗███████╗███████╗

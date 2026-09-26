@@ -1,6 +1,7 @@
+import sys
 import chromadb
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pathlib import Path
 from backend.config import GOOGLE_API_KEY
 
@@ -20,14 +21,14 @@ def ingest_documents():
     """Load knowledge docs, chunk, embed, and store in ChromaDB."""
     client = chromadb.PersistentClient(path=CHROMA_PATH)
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/text-embedding-004",
+        model="models/gemini-embedding-001",
         google_api_key=GOOGLE_API_KEY
     )
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 
     docs_path = Path(__file__).parent / "knowledge_docs"
     if not docs_path.exists():
-        print(f"⚠️  Knowledge docs directory not found: {docs_path}")
+        print(f"[WARN] Knowledge docs directory not found: {docs_path}")
         return
 
     for doc_file in docs_path.glob("*.txt"):
@@ -39,15 +40,19 @@ def ingest_documents():
         chunks = splitter.split_text(text)
 
         for i, chunk in enumerate(chunks):
-            embedding = embeddings.embed_query(chunk)
-            collection.upsert(
-                ids=[f"{stem}_{i}"],
-                documents=[chunk],
-                embeddings=[embedding]
-            )
-        print(f"✅ Ingested {len(chunks)} chunks from '{doc_file.name}' → collection '{collection_name}'")
+            try:
+                embedding = embeddings.embed_query(chunk)
+                collection.upsert(
+                    ids=[f"{stem}_{i}"],
+                    documents=[chunk],
+                    embeddings=[embedding]
+                )
+            except Exception as err:
+                print(f"[ERROR] Embedding chunk {i} of {doc_file.name}: {err}")
 
-    print("\n🎉 RAG ingestion complete!")
+        print(f"[OK] Ingested {len(chunks)} chunks from '{doc_file.name}' into '{collection_name}'")
+
+    print("\n[DONE] RAG knowledge ingestion complete!")
 
 
 if __name__ == "__main__":

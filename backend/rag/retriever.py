@@ -28,7 +28,7 @@ def retrieve_context(query: str, collection: str = "general", top_k: int = 3) ->
     try:
         client = get_chroma_client()
         embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
+            model="models/gemini-embedding-001",
             google_api_key=GOOGLE_API_KEY
         )
         col = client.get_or_create_collection(collection)
