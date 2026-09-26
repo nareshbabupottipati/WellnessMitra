@@ -16,12 +16,8 @@ services:
         sync: false                    # Must be set manually in Render dashboard
       - key: GOOGLE_MAPS_API_KEY
         sync: false
-      - key: EDAMAM_APP_ID
-        sync: false
-      - key: EDAMAM_APP_KEY
-        sync: false
-      - key: DATABASE_URL
-        value: sqlite:///./fitness_agent.db
+      - key: DATA_DIR
+        value: ./data
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS

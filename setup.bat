@@ -57,10 +57,10 @@ if not exist ".env" (
     echo  ================================================================
     echo.
     echo  Required keys:
-    echo    GOOGLE_API_KEY        = Get from https://aistudio.google.com
-    echo    GOOGLE_MAPS_API_KEY   = Get from https://console.cloud.google.com
-    echo    EDAMAM_APP_ID         = Get from https://developer.edamam.com
-    echo    EDAMAM_APP_KEY        = Get from https://developer.edamam.com
+    echo    GOOGLE_API_KEY        = Get from https://aistudio.google.com (Required)
+    echo    GOOGLE_MAPS_API_KEY   = Get from https://console.cloud.google.com (Optional for Gym Finder)
+    echo.
+    echo  Note: Data is saved locally in data/*.json (no database or Edamam key needed!)
     echo.
     echo  Opening .env file for editing...
     timeout /t 2 /nobreak >nul

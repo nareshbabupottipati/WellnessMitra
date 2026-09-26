@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "user_id": "usr_demo123",
+    "date": "2026-09-01",
+    "weight_kg": 77.5,
+    "bmi": 25.3,
+    "logged_at": "2026-09-01T07:30:00"
+  },
+  {
+    "id": 2,
+    "user_id": "usr_demo123",
+    "date": "2026-09-10",
+    "weight_kg": 76.8,
+    "bmi": 25.1,
+    "logged_at": "2026-09-10T07:30:00"
+  },
+  {
+    "id": 3,
+    "user_id": "usr_demo123",
+    "date": "2026-09-18",
+    "weight_kg": 75.9,
+    "bmi": 24.8,
+    "logged_at": "2026-09-18T07:30:00"
+  },
+  {
+    "id": 4,
+    "user_id": "usr_demo123",
+    "date": "2026-09-26",
+    "weight_kg": 75.0,
+    "bmi": 24.5,
+    "logged_at": "2026-09-26T07:30:00"
+  }
+]

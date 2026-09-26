@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "user_id": "usr_demo123",
+    "date": "2026-09-20",
+    "exercises": [
+      {
+        "name": "Barbell Squats",
+        "sets": 4,
+        "reps": "10",
+        "weight_kg": 70
+      },
+      {
+        "name": "Romanian Deadlift",
+        "sets": 3,
+        "reps": "10",
+        "weight_kg": 60
+      },
+      {
+        "name": "Leg Press",
+        "sets": 3,
+        "reps": "12",
+        "weight_kg": 120
+      }
+    ],
+    "duration_mins": 50,
+    "calories_burned": 420.0,
+    "intensity": "high",
+    "notes": "Leg day session - great quad engagement",
+    "logged_at": "2026-09-20T18:30:00"
+  },
+  {
+    "id": 2,
+    "user_id": "usr_demo123",
+    "date": "2026-09-22",
+    "exercises": [
+      {
+        "name": "Barbell Bench Press",
+        "sets": 4,
+        "reps": "8",
+        "weight_kg": 65
+      },
+      {
+        "name": "Incline Dumbbell Press",
+        "sets": 3,
+        "reps": "10",
+        "weight_kg": 20
+      },
+      {
+        "name": "Overhead Tricep Extension",
+        "sets": 3,
+        "reps": "12",
+        "weight_kg": 15
+      }
+    ],
+    "duration_mins": 45,
+    "calories_burned": 380.0,
+    "intensity": "high",
+    "notes": "Chest & Triceps hypertrophy",
+    "logged_at": "2026-09-22T19:00:00"
+  },
+  {
+    "id": 3,
+    "user_id": "usr_demo123",
+    "date": "2026-09-24",
+    "exercises": [
+      {
+        "name": "Pull-ups",
+        "sets": 4,
+        "reps": "8",
+        "weight_kg": 0
+      },
+      {
+        "name": "Barbell Row",
+        "sets": 4,
+        "reps": "10",
+        "weight_kg": 55
+      },
+      {
+        "name": "Bicep Curls",
+        "sets": 3,
+        "reps": "12",
+        "weight_kg": 14
+      }
+    ],
+    "duration_mins": 45,
+    "calories_burned": 360.0,
+    "intensity": "medium",
+    "notes": "Back & Biceps volume day",
+    "logged_at": "2026-09-24T18:00:00"
+  },
+  {
+    "id": 4,
+    "user_id": "usr_demo123",
+    "date": "2026-09-25",
+    "exercises": [
+      {
+        "name": "Overhead Shoulder Press",
+        "sets": 4,
+        "reps": "10",
+        "weight_kg": 35
+      },
+      {
+        "name": "Lateral Raises",
+        "sets": 4,
+        "reps": "15",
+        "weight_kg": 8
+      },
+      {
+        "name": "Face Pulls",
+        "sets": 3,
+        "reps": "15",
+        "weight_kg": 20
+      }
+    ],
+    "duration_mins": 40,
+    "calories_burned": 320.0,
+    "intensity": "medium",
+    "notes": "Shoulder mobility and rear delt work",
+    "logged_at": "2026-09-25T18:45:00"
+  }
+]

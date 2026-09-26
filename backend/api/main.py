@@ -1,16 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.config import CORS_ORIGINS
-from backend.database.db import Base, engine
-from backend.models import User, WorkoutLog, WeightLog, MealLog  # ensure models registered
-from backend.api.routes import user_routes, chat_routes, workout_routes, progress_routes
-
-# Create all database tables
-Base.metadata.create_all(bind=engine)
+from backend.api.routes import user_routes, chat_routes, workout_routes, progress_routes, nutrition_routes
 
 app = FastAPI(
     title="WellnessMitra API",
-    description="AI-powered Fitness & Wellness Agent API",
+    description="AI-powered Fitness & Wellness Agent API (JSON File Storage)",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -29,6 +24,7 @@ app.include_router(user_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(workout_routes.router)
 app.include_router(progress_routes.router)
+app.include_router(nutrition_routes.router)
 
 
 @app.get("/", tags=["Health"])
@@ -37,10 +33,15 @@ def root():
         "app": "WellnessMitra",
         "status": "running",
         "version": "1.0.0",
+        "storage": "JSON file store (data/*.json)",
         "docs": "/docs"
     }
 
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "agents": "ready"}
+    return {
+        "status": "healthy",
+        "agents": "ready",
+        "storage": "json_files"
+    }

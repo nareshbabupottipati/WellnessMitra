@@ -20,11 +20,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=sqlite:////app/data/fitness_agent.db
+      - DATA_DIR=/app/data
       - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
     volumes:
       - ./backend:/app/backend:ro          # Source (read-only in prod)
-      - app_data:/app/data                  # DB persistence
+      - ./data:/app/data                   # JSON data store persistence
       - chroma_data:/app/chroma_db          # Vector DB persistence
     healthcheck:
       test: ["CMD", "python", "-c",
@@ -67,7 +67,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=sqlite:////app/data/fitness_agent.db
+      - DATA_DIR=/app/data
     volumes:
       - ./backend:/app/backend:ro
       - chroma_data:/app/chroma_db
@@ -79,8 +79,6 @@ services:
 
 # ── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
-  app_data:
-    driver: local
   chroma_data:
     driver: local
 

@@ -16,11 +16,13 @@ Make sure these are installed on your Windows machine:
 
 ### Step 1 — Get API Keys (Free)
 
-| Key | Steps |
-|-----|-------|
-| **Google Gemini** | Go to [aistudio.google.com](https://aistudio.google.com) → Sign in → Get API Key |
-| **Google Maps** | Go to [console.cloud.google.com](https://console.cloud.google.com) → Enable "Places API" + "Geocoding API" → Create Key |
-| **Edamam** | Go to [developer.edamam.com](https://developer.edamam.com) → Register → Food Database API → Get App ID + App Key |
+| Key | Required? | Steps |
+|-----|-----------|-------|
+| **Google Gemini** | ✅ **Required** | Go to [aistudio.google.com](https://aistudio.google.com) → Sign in → Get API Key |
+| **Google Maps** | ⚪ Optional | Go to [console.cloud.google.com](https://console.cloud.google.com) → Enable "Places API" + "Geocoding API" (for Gym Finder) |
+
+> 💡 **No Database or Edamam Account Needed!**
+> All user profiles, workouts, weight logs, meals, and food nutrition are stored directly in local JSON files in `data/*.json`.
 
 ---
 
@@ -32,9 +34,9 @@ Double-click: setup.bat
 
 This will automatically:
 - ✅ Check Python and Node.js
-- ✅ Create `.env` file and open it for editing (add your keys here)
+- ✅ Create `.env` file and open it for editing (paste your `GOOGLE_API_KEY`)
 - ✅ Create Python virtual environment (`venv/`)
-- ✅ Install all Python packages (`requirements.txt`)
+- ✅ Install all Python packages (`backend/requirements.txt`)
 - ✅ Install all frontend packages (`npm install`)
 - ✅ Run RAG knowledge ingestion (builds ChromaDB vector store)
 
@@ -46,13 +48,27 @@ This will automatically:
 Double-click: start.bat
 ```
 
-This opens two terminal windows (keep them open) and launches the browser automatically.
+This opens two terminal windows (keep them open) and launches your browser automatically.
 
 | Service | URL |
 |---------|-----|
 | 🌐 **Frontend (React)** | http://localhost:3000 |
 | ⚡ **Backend (FastAPI)** | http://localhost:8000 |
 | 📄 **API Docs (Swagger)** | http://localhost:8000/docs |
+
+---
+
+## 📁 JSON Data Storage
+
+All data is human-readable and stored locally in the `data/` directory:
+
+| JSON File | Purpose | Pre-populated? |
+|-----------|---------|----------------|
+| `data/foods.json` | Nutrition database (90+ Indian & global foods) | ✅ Yes |
+| `data/users.json` | User profiles | ✅ Demo user `usr_demo123` included |
+| `data/workout_logs.json` | Workout session logs | ✅ Sample workouts included |
+| `data/weight_logs.json` | Weight measurements & BMI history | ✅ Sample progress trend included |
+| `data/meal_logs.json` | Daily meal logs & macros | ✅ Sample meals included |
 
 ---
 
@@ -70,13 +86,12 @@ This opens two terminal windows (keep them open) and launches the browser automa
 
 ## 🔑 Editing Your API Keys
 
-Open the `.env` file in Notepad and fill in your keys:
+Open the `.env` file in Notepad and fill in your Gemini key:
 
 ```env
-GOOGLE_API_KEY=AIzaSy...your-key
-GOOGLE_MAPS_API_KEY=AIzaSy...your-key
-EDAMAM_APP_ID=abc123...
-EDAMAM_APP_KEY=def456...
+GOOGLE_API_KEY=AIzaSy...your-gemini-key
+GOOGLE_MAPS_API_KEY=AIzaSy...your-maps-key-optional
+DATA_DIR=./data
 ```
 
 ---
@@ -85,67 +100,34 @@ EDAMAM_APP_KEY=def456...
 
 ### Option A — Use the UI
 1. Open http://localhost:3000
-2. Complete the 4-step onboarding form
+2. Complete the onboarding form (or explore existing demo profile)
 3. Chat with FitBot using the quick prompt buttons
 
 ### Option B — Use Swagger API Docs
 1. Open http://localhost:8000/docs
-2. Create a user via `POST /users/onboard`
-3. Send a chat message via `POST /chat/`
+2. Create or view user profiles via `GET /users/usr_demo123/profile`
+3. Search food nutrition via `GET /nutrition/foods?q=banana`
+4. Send a chat message via `POST /chat/`
 
 ### Sample API Test (PowerShell)
 ```powershell
-# 1. Create user
-$user = @{
-    name="Rahul"; age=28; gender="male"
-    weight_kg=80; height_cm=175
-    fitness_goal="weight_loss"; activity_level="moderate"
-    dietary_pref="vegetarian"; location="Hyderabad, India"
-    days_per_week=4
-} | ConvertTo-Json
+# 1. Check user profile
+Invoke-RestMethod -Uri "http://localhost:8000/users/usr_demo123/profile"
 
-$result = Invoke-RestMethod -Uri "http://localhost:8000/users/onboard" -Method POST -Body $user -ContentType "application/json"
-$userId = $result.user_id
-Write-Host "User ID: $userId"
+# 2. Search local food database
+Invoke-RestMethod -Uri "http://localhost:8000/nutrition/foods?q=paneer"
 
-# 2. Chat with FitBot
-$chat = @{ user_id=$userId; message="Give me a 3-day workout plan"; chat_history=@() } | ConvertTo-Json
-Invoke-RestMethod -Uri "http://localhost:8000/chat/" -Method POST -Body $chat -ContentType "application/json"
+# 3. View 30-day progress
+Invoke-RestMethod -Uri "http://localhost:8000/progress/usr_demo123/summary"
 ```
 
 ---
 
-## ❗ Troubleshooting
+## 🛑 Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| `setup.bat` can't find Python | Install from [python.org](https://python.org), check "Add to PATH" ✅ |
-| `setup.bat` can't find Node | Install from [nodejs.org](https://nodejs.org) |
-| Backend won't start | Check `.env` has valid `GOOGLE_API_KEY` |
-| Gym finder not working | Enable Places API + Geocoding API in Google Cloud Console |
-| RAG ingestion fails | Check `GOOGLE_API_KEY` is valid and has billing enabled |
-| Frontend shows blank page | Wait 30 seconds for React to compile, then refresh |
-| Port already in use | Run `stop.bat` first, then `start.bat` |
+### Port 8000 or 3000 already in use
+Run `stop.bat` to kill any leftover processes, then run `start.bat` again.
 
----
-
-## 📂 Project Structure
-
-```
-WellnessMitra/
-├── setup.bat             ← Run first (installs everything)
-├── start.bat             ← Run to launch the app
-├── stop.bat              ← Run to stop everything
-├── .env                  ← Your API keys (created by setup.bat)
-├── backend/
-│   ├── agents/           ← AI agents (workout, nutrition, etc.)
-│   ├── api/              ← FastAPI routes
-│   ├── rag/              ← RAG pipeline + knowledge docs
-│   └── database/         ← SQLite models
-└── frontend/
-    └── src/              ← React components and pages
-```
-
----
-
-*Built for IIIT-H Agentic AI Mini-Hackathon 2026* 🏋️
+### Python / Node not recognized
+Make sure Python 3.10+ and Node.js 18+ are added to your Windows PATH environment variable.
+Restart your terminal / computer after installing them.

@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from backend.config import GOOGLE_API_KEY
 from backend.rag.retriever import retrieve_context
+from backend.database.crud import search_foods, get_all_foods, get_food
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
@@ -36,22 +37,26 @@ User Profile:
 - Dietary Preference: {dietary_pref}
 - Food Allergies: {allergies}
 
+Verified Local Food Database (JSON):
+{food_db_context}
+
 Nutrition Knowledge Base:
 {rag_context}
 
-Create a balanced 7-day meal plan with:
+Create a balanced 7-day meal plan (or respond accurately to the specific food/nutrition query):
 1. Breakfast, Lunch, Dinner, and 2 Snacks each day
-2. Approximate calories and macros (protein/carbs/fat) per meal
+2. Approximate calories and macros (protein/carbs/fat) per meal using the verified JSON food data
 3. Simple preparation tips
 4. Daily water intake recommendation
 5. A brief list of foods to AVOID based on preferences and allergies
 
-Use locally available Indian ingredients where possible. Keep meals practical and delicious.
+Use locally available Indian ingredients from the food database where possible. Keep meals practical and delicious.
 """
 
 
 def nutrition_agent_node(state: dict) -> dict:
-    profile = state["user_profile"]
+    profile = state.get("user_profile", {})
+    user_msg = state.get("user_message", "")
 
     try:
         calories = calculate_daily_calories(
@@ -64,6 +69,28 @@ def nutrition_agent_node(state: dict) -> dict:
         )
     except Exception:
         calories = 2000
+
+    # Look up matching foods in local JSON database
+    all_foods = get_all_foods()
+    matching_foods = []
+    if user_msg:
+        for f in all_foods:
+            if f.get("name", "").lower() in user_msg.lower():
+                matching_foods.append(f)
+
+    # If no specific matches, sample staple foods suitable for preferences
+    if not matching_foods:
+        matching_foods = all_foods[:12]
+
+    food_db_lines = []
+    for f in matching_foods[:15]:
+        p = f.get("per_100g", {})
+        food_db_lines.append(
+            f"- {f.get('name')}: {p.get('calories')} kcal, "
+            f"Protein: {p.get('protein')}g, Carbs: {p.get('carbs')}g, "
+            f"Fat: {p.get('fat')}g, Fiber: {p.get('fiber', 0)}g per 100g"
+        )
+    food_db_context = "\n".join(food_db_lines)
 
     rag_context = retrieve_context(
         query=f"meal plan {profile.get('dietary_pref')} {profile.get('fitness_goal')}",
@@ -79,6 +106,7 @@ def nutrition_agent_node(state: dict) -> dict:
         calories=calories,
         dietary_pref=profile.get("dietary_pref", "none"),
         allergies=", ".join(profile.get("allergies", [])) or "none",
+        food_db_context=food_db_context,
         rag_context=rag_context or "No additional context available."
     )
 

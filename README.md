@@ -111,11 +111,12 @@ npm start
 
 ## 🔑 API Keys Required
 
-| Service | Get API Key | Free Tier |
-|---------|------------|-----------|
-| Google Gemini | [aistudio.google.com](https://aistudio.google.com) | ✅ Yes |
-| Google Maps | [console.cloud.google.com](https://console.cloud.google.com) | ✅ $200/mo credit |
-| Edamam Food API | [developer.edamam.com](https://developer.edamam.com) | ✅ Yes |
+| Service | Get API Key | Free Tier | Required? |
+|---------|------------|-----------|-----------|
+| Google Gemini | [aistudio.google.com](https://aistudio.google.com) | ✅ Yes | ✅ **Required** |
+| Google Maps | [console.cloud.google.com](https://console.cloud.google.com) | ✅ $200/mo credit | ⚪ Optional (Gym Finder) |
+
+> 💡 **No Database or Edamam Account Needed!** All data (users, workouts, progress, meals, foods) is stored locally in `data/*.json`.
 
 ---
 
@@ -125,7 +126,7 @@ npm start
 |-------|-------------|----------------|
 | **Orchestrator** | All messages | Intent classification + routing |
 | **Workout Agent** | Workout queries | Weekly plans, exercises, adaptations |
-| **Nutrition Agent** | Diet queries | Meal plans, macros, recipes |
+| **Nutrition Agent** | Diet queries | Meal plans, macros, food lookup via local JSON DB |
 | **Location Agent** | Gym queries | Google Maps gym discovery |
 | **Progress Agent** | Progress queries | Analytics, insights, reports |
 | **Assistant Agent** | General / Wellness | Q&A, motivation, mental wellness |
@@ -144,12 +145,13 @@ npm start
 
 - **LLM:** Google Gemini 2.0 Flash
 - **Agents:** LangGraph
-- **Backend:** FastAPI + SQLAlchemy
+- **Backend:** FastAPI + Pydantic
+- **Storage:** Local JSON Data Store (`data/*.json`)
 - **Frontend:** React 18
 - **Vector DB:** ChromaDB
 - **Embeddings:** Google text-embedding-004
 - **Maps:** Google Places API
-- **Nutrition:** Edamam Food API
+- **Nutrition:** Local JSON Food Database (90+ foods)
 
 ---
 
