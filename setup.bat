@@ -57,10 +57,10 @@ if not exist ".env" (
     echo  ================================================================
     echo.
     echo  Required keys:
-    echo    GOOGLE_API_KEY        = Get from https://aistudio.google.com (Required)
-    echo    GOOGLE_MAPS_API_KEY   = Get from https://console.cloud.google.com (Optional for Gym Finder)
+    echo    GOOGLE_API_KEY        = Get from https://aistudio.google.com (Only key required!)
     echo.
-    echo  Note: Data is saved locally in data/*.json (no database or Edamam key needed!)
+    echo  Note: Gym finder and nutrition run 100% locally from data/*.json!
+    echo  (No database, Edamam, or Google Maps billing required)
     echo.
     echo  Opening .env file for editing...
     timeout /t 2 /nobreak >nul

@@ -18,11 +18,12 @@ Make sure these are installed on your Windows machine:
 
 | Key | Required? | Steps |
 |-----|-----------|-------|
-| **Google Gemini** | ✅ **Required** | Go to [aistudio.google.com](https://aistudio.google.com) → Sign in → Get API Key |
-| **Google Maps** | ⚪ Optional | Go to [console.cloud.google.com](https://console.cloud.google.com) → Enable "Places API" + "Geocoding API" (for Gym Finder) |
+| **Google Gemini** | ✅ **Only Key Needed!** | Go to [aistudio.google.com](https://aistudio.google.com) → Sign in → Get API Key (Free) |
 
-> 💡 **No Database or Edamam Account Needed!**
-> All user profiles, workouts, weight logs, meals, and food nutrition are stored directly in local JSON files in `data/*.json`.
+> 💡 **No Database, Edamam, or Google Maps Account Needed!**
+> - Gyms & fitness centers: Stored locally in `data/gyms.json` with 1-click free map links.
+> - Nutrition & foods: Stored locally in `data/foods.json` (90+ items).
+> - Users, workouts, progress & meals: Stored locally in `data/*.json`.
 
 ---
 

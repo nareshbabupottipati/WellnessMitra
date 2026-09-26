@@ -233,3 +233,38 @@ def get_food(name: str) -> Optional[dict]:
         if f.get("name", "").strip().lower() == target:
             return f
     return None
+
+
+# ── Gym Queries (JSON Store - gyms.json) ───────────────────────────────────────
+
+def get_all_gyms() -> List[dict]:
+    """Retrieve full gyms list from data/gyms.json."""
+    data = json_store.read("gyms.json")
+    if isinstance(data, dict):
+        return data.get("gyms", [])
+    elif isinstance(data, list):
+        return data
+    return []
+
+
+def search_gyms(location: str = "", limit: int = 10) -> List[dict]:
+    """Search gyms by city, area, address, or name from data/gyms.json."""
+    gyms = get_all_gyms()
+    query = (location or "").strip().lower()
+    if not query:
+        return gyms[:limit]
+
+    terms = [t for t in query.replace(",", " ").replace("-", " ").split() if len(t) > 2]
+
+    matched = []
+    for g in gyms:
+        haystack = f"{g.get('name', '')} {g.get('city', '')} {g.get('area', '')} {g.get('address', '')}".lower()
+        if query in haystack:
+            matched.append((2, g))
+        elif any(t in haystack for t in terms):
+            matched.append((1, g))
+
+    matched.sort(key=lambda x: x[0], reverse=True)
+    results = [g for _, g in matched]
+    return results[:limit] if results else gyms[:limit]
+
